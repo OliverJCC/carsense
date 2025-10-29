@@ -1,28 +1,48 @@
 // src/api/http.ts
 import axios from "axios";
 
-const baseURL = import.meta.env?.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
+const baseURL =
+  (import.meta as any).env?.VITE_API_BASE_URL ||
+  "http://localhost:8000/api/v1";
 
-export const api = axios.create({ baseURL });
+const api = axios.create({ baseURL });
 
-export function setToken(token?: string | null) {
-  if (token) {
-    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    try { localStorage.setItem("token", token); } catch {}
-  } else {
-    delete api.defaults.headers.common["Authorization"];
-    try { localStorage.removeItem("token"); } catch {}
-  }
+// Adjunta SIEMPRE el token actual de localStorage
+api.interceptors.request.use((config) => {
+  try {
+    const t =
+      typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
+    if (t) {
+      (config.headers as any).Authorization = `Bearer ${t}`;
+    } else if ((config.headers as any).Authorization) {
+      delete (config.headers as any).Authorization;
+    }
+  } catch {}
+  return config;
+});
+
+// Utilidad por si la quieres usar desde el Login/AuthContext
+export function setToken(t: string | null) {
+  if (typeof localStorage === "undefined") return;
+  if (t) localStorage.setItem("token", t);
+  else localStorage.removeItem("token");
 }
 
-// Cargar token guardado al iniciar
-try {
-  const saved = localStorage.getItem("token");
-  if (saved) api.defaults.headers.common["Authorization"] = `Bearer ${saved}`;
-} catch {}
-
-// ⬇⬇⬇ ESTA LÍNEA ES LA CLAVE
+// Export nombrado y default (para no romper imports antiguos)
+export { api };
 export default api;
+
+// Rehidrata tras refresh (opcional)
+(() => {
+  try {
+    const t =
+      typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
+    if (t) {
+      api.defaults.headers.common.Authorization = `Bearer ${t}`;
+    }
+  } catch {}
+})();
+
 
 
 

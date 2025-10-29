@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { listVehicles, getNextServices } from "../api/vehicles";
 import { listAlerts, runAlertsNow, ackAlert } from "../api/alerts";
-import { listByVehicle, createRecord } from "../api/serviceRecords";
+import { listByVehicle, createServiceRecord } from "../api/serviceRecords";
 
 // 👇 Importa tipos como "type" (no valores)
 import type { Vehicle } from "../api/vehicles";
@@ -123,7 +123,7 @@ export default function Dashboard() {
 
             // Crear record de "aceite" para hoy
             const today = new Date().toISOString().slice(0, 10);
-            const created = await safe(() => createRecord({
+            const created = await safe(() => createServiceRecord({
               vehicle_id: selected,
               servicio: "aceite",
               fecha: today,

@@ -1,6 +1,8 @@
+// src/pages/Login.tsx
 import { useState } from "react";
 import { login, register } from "../api/auth";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth"; // <-- nuevo
 
 export default function LoginPage() {
   const [email, setEmail] = useState("demo5@carsense.mx");
@@ -8,19 +10,29 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string|null>(null);
   const navigate = useNavigate();
+  const { login: authLogin } = useAuth(); // <-- nuevo
 
   async function handleLogin(e:React.FormEvent){
     e.preventDefault(); setLoading(true); setError(null);
-    try{ await login(email, password); navigate("/"); }
-    catch(err:any){ setError(err?.response?.data?.detail ?? "Error al iniciar sesión"); }
-    finally{ setLoading(false); }
+    try{
+      const tok = await login(email, password);     // tu login() devuelve el token
+      authLogin(tok);                               // guarda en contexto+localStorage+axios
+      navigate("/dashboard", { replace: true });   // navega sin refrescar
+    }catch(err:any){
+      setError(err?.response?.data?.detail ?? "Error al iniciar sesión");
+    }finally{ setLoading(false); }
   }
 
   async function handleRegister(){
     setLoading(true); setError(null);
-    try{ await register(email, password); await login(email, password); navigate("/"); }
-    catch(err:any){ setError(err?.response?.data?.detail ?? "Error al registrar"); }
-    finally{ setLoading(false); }
+    try{
+      await register(email, password);
+      const tok = await login(email, password);
+      authLogin(tok);
+      navigate("/dashboard", { replace: true });
+    }catch(err:any){
+      setError(err?.response?.data?.detail ?? "Error al registrar");
+    }finally{ setLoading(false); }
   }
 
   return (
@@ -36,3 +48,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
